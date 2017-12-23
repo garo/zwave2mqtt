@@ -21,7 +21,7 @@ var zwave = new OZW({
         Logging : true,
         ConsoleOutput : false
 });
-var client = MQTT.connect('mqtt://172.16.153.4');
+var client = MQTT.connect('mqtt://172.16.153.2');
 
 
 // List of devices. This is a bit crude, but working way to list devices. The devices are specified with an array of properties.
