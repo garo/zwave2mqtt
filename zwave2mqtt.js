@@ -83,18 +83,35 @@ zwave.on('node added', function(nodeid) {
 
 var handleValue = function(nodeid, commandclass, value) {
   if (commandclass == 37) {
-    console.log("value added to node", nodeid, "command class:", commandclass, "value:", value);
+    console.log("value for node", nodeid, "command class:", commandclass, "value:", value);
   }
   for (var i = 0; i < devices.length; i++) {
     if (nodeid == devices[i].zwave[0] && commandclass == devices[i].zwave[1] && value.instance == devices[i].zwave[2] && value.index == devices[i].zwave[3]) {
-      console.log("Got device state for", devices[i].name, "state:", value.value);
-      var str = "";
-      if (value.type == 'bool') { // Bool values are pubished as ON/OFF strings
-        str = value.value ? "ON" : "OFF";
+
+      // Some devices send the "latest" value too fast when the value is in fact the previous state
+      // Because of this we use the .pending structure to trigger a refreshValue() call 
+      if (devices[i].pending !== undefined && value.value != devices[i].pending.value && devices[i].pending.fired < 6) {
+        console.log("Got old value for", devices[i].zwave, "value:", value.value, "when it should be", devices[i].pending.value, "this has been checked for", devices[i].pending.fired, "times.");
+        devices[i].fired++;
+        var data = devices[i];
+        setTimeout(function() {
+          zwave.refreshValue(data.zwave[0], data.zwave[1], data.zwave[2], data.zwave[3]);
+        }, 400);
       } else {
-        str = value.value;
+        console.log("Got device state for", devices[i].name, "state:", value.value);
+
+        // Reset any possible pending structure
+        if (devices[i].pending !== undefined) {
+          delete devices[i].pending;
+        }
+        var str = "";
+        if (value.type == 'bool') { // Bool values are pubished as ON/OFF strings
+          str = value.value ? "ON" : "OFF";
+        } else {
+          str = value.value;
+        }
+        client.publish(devices[i].topic + "/state", value.value ? "ON" : "OFF", {retain: true});
       }
-      client.publish(devices[i].topic + "/state", value.value ? "ON" : "OFF", {retain: true});
     }
   }
 };
@@ -147,6 +164,10 @@ client.on('message', function (topic, message) {
       }
       console.log("Setting light", devices[i].name, "to", str);
       zwave.setValue(devices[i].zwave[0], devices[i].zwave[1], devices[i].zwave[2], devices[i].zwave[3], state);
+
+      // Stored the expected value so that we can check later that we got the expected value of of the zwave network
+      devices[i].pending = { value: state, fired:0 };
+
       //client.publish(devices[i].topic + "/state", str, {retain:true});
     }
   }
