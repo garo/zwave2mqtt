@@ -90,6 +90,7 @@ var handleValue = function(nodeid, commandclass, value) {
 
       // Some devices send the "latest" value too fast when the value is in fact the previous state
       // Because of this we use the .pending structure to trigger a refreshValue() call 
+      // see https://github.com/OpenZWave/node-openzwave-shared/issues/65
       if (devices[i].pending !== undefined && value.value != devices[i].pending.value && devices[i].pending.fired < 6) {
         console.log("Got old value for", devices[i].zwave, "value:", value.value, "when it should be", devices[i].pending.value, "this has been checked for", devices[i].pending.fired, "times.");
         devices[i].fired++;
