@@ -15,7 +15,7 @@ var process = require('process');
 var OZW = require('openzwave-shared');
 var MQTT = require('mqtt');
 
-var zwave_device = '/dev/ttyACM1';
+var zwave_device = '/dev/ttyACM0';
 var zwave = new OZW({
         SaveConfig : false,
         Logging : true,
@@ -127,7 +127,7 @@ process.on('SIGINT', function() {
 client.on('connect', function () {
   console.log("Connected to mqtt");
   client.subscribe('nest/zwave/sauna/#');
-  zwave.connect('/dev/ttyACM1');
+  zwave.connect(zwave_device);
 });
 
 client.on('message', function (topic, message) {

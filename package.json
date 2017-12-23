@@ -1,0 +1,22 @@
+{
+  "name": "zwave2mqtt",
+  "version": "1.0.0",
+  "description": "Simple zwave to mqtt bridge, supports natively Home Assistant usage.",
+  "main": "app.js",
+  "homepage": "https://github.com/garo/zwave2mqtt",
+  "keywords": [
+    "Z-Wave",
+    "MQTT",
+    "NodeJS"
+  ],
+  "dependencies": {
+    "mqtt": "^2.12.1",
+    "openzwave-shared": "^1.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/garo/zwave2mqtt/tree/master/"
+  },
+  "author": "Juho Mäkinen <juho.makinen@gmail.com> http://www.github.com/garo",
+  "license": "Apache-2.0"
+}
