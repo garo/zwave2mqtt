@@ -17,7 +17,7 @@ var MQTT = require('mqtt');
 
 var zwave_device = '/dev/ttyACM0';
 var zwave = new OZW({
-        SaveConfig : false,
+        SaveConfig : true,
         Logging : true,
         ConsoleOutput : false
 });
@@ -77,13 +77,13 @@ zwave.on('connected', function() {
 });
 
 zwave.on('node added', function(nodeid) {
-  console.log("node added", nodeid);
+  console.log("node added", nodeid, arguments);
 }); 
 
 
 var handleValue = function(nodeid, commandclass, value) {
   if (commandclass == 37) {
-    console.log("value for node", nodeid, "command class:", commandclass, "value:", value);
+    //    console.log("value for node", nodeid, "command class:", commandclass, "value:", value);
   }
   for (var i = 0; i < devices.length; i++) {
     if (nodeid == devices[i].zwave[0] && commandclass == devices[i].zwave[1] && value.instance == devices[i].zwave[2] && value.index == devices[i].zwave[3]) {
@@ -99,7 +99,6 @@ var handleValue = function(nodeid, commandclass, value) {
           zwave.refreshValue(data.zwave[0], data.zwave[1], data.zwave[2], data.zwave[3]);
         }, 400);
       } else {
-        console.log("Got device state for", devices[i].name, "state:", value.value);
 
         // Reset any possible pending structure
         if (devices[i].pending !== undefined) {
@@ -111,7 +110,14 @@ var handleValue = function(nodeid, commandclass, value) {
         } else {
           str = value.value;
         }
-        client.publish(devices[i].topic + "/state", value.value ? "ON" : "OFF", {retain: true});
+
+        // simple logic so that we dont publish same value all over again on every poll update. the mqtt broker will retain the latest value with the retain:true flag.
+        // the random() logic is so that we publish the value once in a while so that the system will be eventually consistent
+        if (devices[i].lastvalue != value.value || Math.random() <= 0.01) {
+          console.log("Device", devices[i].name, "changed from", devices[i].lastvalue, "to", value.value, "(" + str + ")");
+          client.publish(devices[i].topic + "/state", value.value ? "ON" : "OFF", {retain: true});
+          devices[i].lastvalue = value.value;
+        }
       }
     }
   }
@@ -120,8 +126,19 @@ var handleValue = function(nodeid, commandclass, value) {
 zwave.on('value changed', handleValue);
 zwave.on('value added', handleValue);
 
+zwave.on('node event', function(nodeid, data) {
+//  console.log("node event", nodeid, data);
+  
+});
+
 zwave.on('scan complete', function() {
   console.log("scan complete");
+
+  // Some devices report local state changes (ie. when human presses a physical switch) incorrectly
+  // so we just workaround that by enabling value polling.
+  for (var i = 0; i < devices.length; i++) {
+    zwave.enablePoll(devices[i].zwave[0], devices[i].zwave[1], devices[i].zwave[2], devices[i].zwave[3]);
+  }
 });
 
 var stopping = false;
