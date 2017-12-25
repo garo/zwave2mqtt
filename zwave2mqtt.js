@@ -21,6 +21,7 @@ var zwave = new OZW({
         Logging : true,
         ConsoleOutput : false
 });
+var zwave_started = false;
 var client = MQTT.connect('mqtt://172.16.153.2');
 
 
@@ -162,7 +163,14 @@ process.on('SIGINT', function() {
 client.on('connect', function () {
   console.log("Connected to mqtt");
   client.subscribe('nest/zwave/sauna/#');
-  zwave.connect(zwave_device);
+  if (!zwave_started) {
+    zwave_started = true;
+    zwave.connect(zwave_device);
+  }
+});
+
+client.on('close', function() {
+  console.log("mqtt disconnected.");
 });
 
 client.on('message', function (topic, message) {
